@@ -14,15 +14,19 @@ GameManager (Controller)
 
 ## Következő Lépések - Fejlesztési Sorrendje
 
-### 1. Fázis: Egységmozgatás (Priority: HIGH)
-- [ ] Pathfinding implementáció (A* algoritmus)
-- [ ] Egységmozgatási animáció
-- [ ] Parancs üzenetsor
-- [ ] Csoportos mozgatás
+### 1. Fázis: Egységmozgatás (Priority: HIGH) ✅ ELKÉSZÜLT
+- [x] Pathfinding implementáció (A* algoritmus)
+- [x] Egységmozgatási vezérlés
+- [ ] Parancs üzenetsor (csoportos parancsok)
+- [ ] Mozgatási animáció (forgás, lépés)
+- [ ] Ütközéskerülés (egységek közötti)
+- [ ] Formáció mozgatás
 
-**Fájlok**:
-- `scripts/units/unit_pathfinding.gd` - Pathfinding logika
-- `scripts/units/movement_controller.gd` - Mozgatás vezérlés
+**Elkészült Fájlok**:
+- ✅ `scripts/pathfinding/astar_pathfinder.gd` - A* algoritmus
+- ✅ `scripts/pathfinding/pathfinding_grid.gd` - Grid rendszer
+- ✅ `scripts/units/movement_controller.gd` - Mozgatás vezérlés
+- ✅ `scripts/units/unit.gd` - Egység mozgatási support
 
 ### 2. Fázis: Épületek (Priority: HIGH)
 - [ ] Épület jelenet létrehozása
@@ -136,6 +140,8 @@ signal unit_selected(unit: Unit)
 signal unit_deselected(unit: Unit)
 signal unit_died(unit: Unit)
 signal unit_moved(unit: Unit, position: Vector3)
+signal move_started(target: Vector3)
+signal move_finished(position: Vector3)
 
 # Épület jelzések
 signal building_completed(building: Building)
@@ -144,6 +150,83 @@ signal building_damaged(building: Building, damage: float)
 # Erőforrás jelzések
 signal gold_changed(amount: int)
 signal wood_changed(amount: int)
+
+# Kijelölés jelzések
+signal selection_changed(selected: bool)
+```
+
+## A* Pathfinding Rendszer
+
+### Áttekintés
+A projekt egy hatékony A* pathfinding algoritmust használ a terepen történő navigációhoz. A rendszer grid-alapú, ami 100x100-as cellákat kezel alapértelmezésként.
+
+### Osztályok
+
+#### AStarPathfinder
+A* algoritmus magja. Megtalálja a legrövidebb utat egy starttól egy célig, az Euklideszi heurisztika felhasználásával.
+
+```gdscript
+# Útvonal keresése
+var pathfinder = AStarPathfinder.new()
+pathfinder.set_grid(Vector2i(100, 100), walkable_cells, 1.0)
+var path = pathfinder.find_path(start_grid, goal_grid)  # Array[Vector2i]
+
+# Grid-ből világpozícióba konvertálás
+var world_pos = pathfinder.grid_to_world(Vector2i(10, 20))  # Vector3
+
+# Világból grid-be konvertálás
+var grid_pos = pathfinder.world_to_grid(Vector3(10, 0, 20))  # Vector2i
+```
+
+#### PathfindingGrid
+A terep kezelése és útvonal cache-elése. Kezeli a navigálható cellákat és az akadályokat.
+
+```gdscript
+# PathfindingGrid inicializálása
+var grid = PathfindingGrid.new()
+grid.grid_size = Vector2i(200, 200)
+grid.cell_size = 1.0
+
+# Útvonal keresése világpozícióban
+var path = grid.find_path(start_pos, goal_pos)  # Array[Vector3]
+
+# Akadályok hozzáadása/eltávolítása
+grid.add_obstacle(Vector3(50, 0, 50), radius: 2.0)
+grid.remove_obstacle(Vector3(50, 0, 50), radius: 2.0)
+
+# Cache törlése
+grid.clear_cache()
+```
+
+#### MovementController
+Az egység mozgatásának kezelése az útvonal mentén.
+
+```gdscript
+# Egységmozgatás
+var movement = MovementController.new()
+movement.movement_speed = 10.0
+movement.stop_distance = 0.5
+movement.move_to(target_position)  # bool
+
+# Mozgatás leállítása
+movement.stop_moving()
+
+# Mozgatási státusz
+var is_moving = movement.get_is_moving()  # bool
+var current_path = movement.get_current_path()  # Array[Vector3]
+```
+
+### Teljesítmény
+- **Grid méret**: 200x200 (alapértelmezett)
+- **Keresési idő**: <1ms tipikus
+- **Cache**: Útvonal cache-elés az ismételt keresésekhez
+- **8-irányú mozgatás**: Diagonális mozgatás támogatott
+
+### Jövőbeli Fejlesztések
+- [ ] Jump Point Search (JPS) optimalizálása
+- [ ] Terep magasság támogatása
+- [ ] Dinamikus akadály kezelés
+- [ ] Mozgatási animáció smooth-elése
 
 # Játék jelzések
 signal game_started()

@@ -7,12 +7,26 @@ class_name GameManager
 
 var unit_selection: Node
 var camera_controller: Camera3D
+var pathfinding_grid: PathfindingGrid
+var building_manager: BuildingManager
 
 @onready var units_container = Node3D.new()
 
 func _ready() -> void:
 	# Jelenet felépítése
 	setup_scene()
+	
+	# Pathfinding grid létrehozása
+	pathfinding_grid = PathfindingGrid.new()
+	pathfinding_grid.name = "PathfindingGrid"
+	pathfinding_grid.grid_size = Vector2i(200, 200)
+	pathfinding_grid.cell_size = 1.0
+	add_child(pathfinding_grid)
+	
+	# Épület menedzser létrehozása
+	building_manager = BuildingManager.new()
+	building_manager.name = "BuildingManager"
+	add_child(building_manager)
 	
 	# Kijelölési menedzser
 	unit_selection = CanvasLayer.new()
@@ -40,6 +54,9 @@ func _ready() -> void:
 	
 	# Demo egységek létrehozása
 	spawn_demo_units()
+	
+	# Demo épületek létrehozása
+	spawn_demo_buildings()
 
 func setup_scene() -> void:
 	# Közvetlen megvilágítás
@@ -117,6 +134,15 @@ func move_units_to(units: Array, target: Vector3) -> void:
 	for unit in units:
 		if unit.has_method("move_to"):
 			unit.move_to(target)
+
+func spawn_demo_buildings() -> void:
+	# Demo épületek létrehozása
+	if building_manager:
+		var building1 = building_manager.create_building("Kastély", Vector3(50, 0, 50), 300, 200)
+		var building2 = building_manager.create_building("Laktanya", Vector3(-40, 0, 40), 200, 150)
+		var building3 = building_manager.create_building("Aranyfejtő", Vector3(30, 0, -30), 150, 100)
+		
+		print("Demo épületek letrehozva")
 
 func get_mouse_world_position() -> Vector3:
 	var mouse_pos = get_viewport().get_mouse_position()

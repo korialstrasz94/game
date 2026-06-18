@@ -34,8 +34,9 @@ game/
 │   │       ├── Jelenet felépítés
 │   │       ├── Kamera beállítás
 │   │       ├── Kijelölés rendszer
+│   │       ├── PathfindingGrid inicializálása
 │   │       ├── Demo egységek spawning
-│   │       └── Egységmozgatás koordinálás
+│   │       └── Jobbkattintásos egységmozgatás
 │   │
 │   ├── camera/
 │   │   └── camera_controller.gd        [Kamera vezérlőrendszer]
@@ -48,11 +49,16 @@ game/
 │   │   ├── unit.gd                     [Alap egység script]
 │   │   │   ├── Egység adatok (health, speed)
 │   │   │   ├── Kijelölés kezelés
-│   │   │   ├── Vizuális visszajelzés
+│   │   │   ├── Mozgatási support (move_to)
 │   │   │   ├── Sérülés kezelés
 │   │   │   └── Mesh/Material renderelés
 │   │   │
-│   │   ├── (unit_movement.gd)          [Mozgatásvezérlés - jövőben]
+│   │   ├── movement_controller.gd      [Egység mozgatás vezérlés] ✅ v1.1.0+
+│   │   │   ├── A* pathfinding integráció
+│   │   │   ├── Útvonal követés
+│   │   │   ├── Mozgatási sebesség
+│   │   │   └── Forgás az irányba
+│   │   │
 │   │   ├── (unit_combat.gd)            [Harc logika - jövőben]
 │   │   └── (unit_types/)               [Különleges egységtípusok - jövőben]
 │   │       ├── worker.gd
@@ -66,6 +72,19 @@ game/
 │   │       ├── Deselect funkciók
 │   │       ├── Shift-kattintásos többejelölés
 │   │       └── Jelzések (signals)
+│   │
+│   ├── pathfinding/                    [A* Pathfinding rendszer] ✅ v1.1.0+
+│   │   ├── astar_pathfinder.gd         [A* algoritmus magja]
+│   │   │   ├── A* keresési algoritmus
+│   │   │   ├── 8-irányú mozgatás
+│   │   │   ├── Euklideszi heurisztika
+│   │   │   └── Grid-ből világpozícióba konvertálás
+│   │   │
+│   │   └── pathfinding_grid.gd         [Grid és akadály kezelés]
+│   │       ├── 100x100 grid alapértelmezett
+│   │       ├── Dinamikus akadályok
+│   │       ├── Útvonal cache-elés
+│   │       └── Grid inicializálása
 │   │
 │   ├── input/
 │   │   └── (input_handler.gd)          [Input kezelés - jövőben]
@@ -126,21 +145,26 @@ game/
 
 ## 📊 Implementációs Állapot
 
-### ✅ Elkészült (1.0 - Alpha)
+### ✅ Elkészült (1.1 - Pathfinding Update)
 - [x] Projekt struktúra
 - [x] Kamera mozgatás (WASD + egér szélsőség)
 - [x] Kamera zoom
 - [x] Egység kijelölés (doboz)
 - [x] Többegység kijelölés
 - [x] Kijelölési vizuális visszajelzés
+- [x] **A* Pathfinding algoritmus**
+- [x] **Pathfinding grid rendszer**
+- [x] **Egységmozgatás jobbkattintással**
+- [x] **Movement controller**
 - [x] Demo 7 egység
 - [x] Szcenarióalap (pálya)
 - [x] Közvetlen megvilágítás
 - [x] Dokumentáció
 
 ### 🔄 Fejlesztés Alatt
-- [ ] Egységmozgatás
-- [ ] Pathfinding (A*)
+- [ ] Ütközéskerülés (egységek között)
+- [ ] Mozgatási animáció smooth-elése
+- [ ] Csoportos mozgatás (formation)
 
 ### 📝 Tervben (Jövőbeli Verzió)
 - [ ] Épületek és építés
@@ -154,31 +178,32 @@ game/
 
 ## 🎯 Szintváltások
 
-### v0.1 - Alpha (JELENLEGI)
+### v1.1 - Pathfinding (AKTUÁLIS)
 - Alapvető projektstruktúra
 - Kamera mozgatás
 - Egységkijelölés
+- **A* Pathfinding + Mozgatás**
 
-### v0.2 - Beta
-+ Egységmozgatás
-+ Pathfinding
+### v1.2 - Polish
++ Mozgatási animáció
++ Ütközéskerülés
++ UI fejlesztés
+
+### v2.0 - Content
 + Épületek
-
-### v0.3 - Pre-Release
 + Erőforrások
 + Harc
-+ AI
 
-### v1.0 - Release
-+ Teljes grafika
-+ Teljes UI
+### v3.0 - Release
++ AI
++ Fog of War
 + Multiplayer (tervezett)
 
 ## 📋 Kód Statisztikák
 
 | Elem | Darab | Sor |
 |------|-------|-----|
-| GDScript fájlok | 4 | ~600 |
+| GDScript fájlok | 7 | ~1200 |
 | Jelenet fájlok | 2 | ~50 |
 | Dokumentáció | 4 | ~1000 |
 | **Összesen** | **10** | **~1650** |
