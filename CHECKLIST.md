@@ -25,6 +25,7 @@ Nyomon követés az összes fejlesztési feladathoz. Frissítsd az [x] jeleket a
 - [x] Egység mesh renderelés
 - [x] Kijelölési indikátor
 - [x] Egészség rendszer
+- [x] **Mozgatási support (move_to)**
 - [ ] Egység típusok (katonai, dolgozó, mágus)
 - [ ] Egység inventár
 - [ ] Egység abilitások
@@ -40,14 +41,15 @@ Nyomon követés az összes fejlesztési feladathoz. Frissítsd az [x] jeleket a
 - [ ] Előző kijelölés (Tab)
 - [ ] Kijelölés inverz
 
-### 5. Mozgatási Szisztéma
-- [ ] Jobbkattintásos mozgatás
-- [ ] Pathfinding algoritmus (A*)
-- [ ] Mozgatási animáció
-- [ ] Sebesség szimulálása
-- [ ] Ütközéskerülés
-- [ ] Formáció mozgatás
-- [ ] Parancsüzenetsor
+### 5. Mozgatási Szisztéma ✅ ELKÉSZÜLT
+- [x] **A* Pathfinding algoritmus**
+- [x] **Pathfinding grid rendszer**
+- [x] **Jobbkattintásos mozgatás**
+- [x] **Egységmozgatás útvonal mentén**
+- [x] **MovementController script**
+- [ ] Ütközéskerülés (egységek között)
+- [ ] Csoportos mozgatás (formáció)
+- [ ] Parancsüzenetsor (queue)
 
 ### 6. Épület Szisztéma
 - [ ] Épület alaposztály
@@ -131,15 +133,20 @@ Nyomon követés az összes fejlesztési feladathoz. Frissítsd az [x] jeleket a
 ✅ Kamera mozgatás
 ✅ Egységkijelölés
 ✅ Demo jelenet
+✅ A* Pathfinding
+✅ Egységmozgatás
+✅ Jobbkattintásos vezérlés
 ```
 
-### Fázis 2: Beta - Mozgatás (Következő)
+### Fázis 2: Refinement - Mozgatás (AKTUÁLIS)
 **Becslésezett: 2026-07**
 ```
-[ ] Pathfinding
-[ ] Egységmozgatás
+✅ Pathfinding (A*)
+✅ Egységmozgatás
+[ ] Ütközéskerülés
 [ ] Parancsüzenetsor
-[ ] Formáció
+[ ] Formáció mozgatás
+[ ] Mozgatási animáció smooth
 ```
 
 ### Fázis 3: Content - Épületek
@@ -179,14 +186,16 @@ Nyomon követés az összes fejlesztési feladathoz. Frissítsd az [x] jeleket a
 ### Magas Prioritás + Könnyű
 - [x] Projektstruktúra
 - [x] Kamera mozgatás
+- [x] Pathfinding
 - [ ] UI alapok
 - [ ] Kijelölési rendszer fejlesztés
 
 ### Magas Prioritás + Nehéz
-- [ ] Pathfinding
+- [x] Egységmozgatás
 - [ ] Épület rendszer
 - [ ] AI logika
 - [ ] Harc rendszer
+- [ ] Ütközéskerülés
 
 ### Alacsony Prioritás + Könnyű
 - [ ] Hangeffektek
@@ -202,12 +211,18 @@ Nyomon követés az összes fejlesztési feladathoz. Frissítsd az [x] jeleket a
 
 ```
 Teljes feladatok:        ~80+
-Elkészült:               4 (5%)
-Fejlesztés alatt:        0 (0%)
-Tervben:                 76 (95%)
+Elkészült:               10 (12-13%)
+Fejlesztés alatt:        3 (4%)
+Tervben:                 67-70 (83-84%)
 
 Becsült teljes idő:      6-12 hónap
 Jelenlegi sebesség:      ~1 fázis/hó
+
+Az elmúlt verzióban:
+- 6 fájl + pathfinding scriptek
+- A* algoritmus implementálva
+- Egységmozgatás működik
+- Jobbkattintásos vezérlés
 ```
 
 ## 🔍 Kódminőség Ellenőrz és
