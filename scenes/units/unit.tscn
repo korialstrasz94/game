@@ -1,0 +1,15 @@
+[gd_scene load_steps=2 format=3 uid="uid://d2a6u5a7u1234"]
+
+[ext_resource type="Script" path="res://scripts/units/unit.gd" id="1_abc123"]
+
+[node name="Unit" type="Node3D"]
+script = ExtResource("1_abc123")
+unit_name = "Katonai Egység"
+health = 100.0
+max_health = 100.0
+speed = 10.0
+model_scale = 1.0
+
+[node name="CollisionShape3D" type="CollisionShape3D" parent="."]
+
+[node name="SelectionArea" type="Area3D" parent="."]

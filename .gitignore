@@ -1,0 +1,38 @@
+# Godot 4 projekt - gitignore
+
+# Godot-specific ignores
+.godot/
+*.import
+export.cfg
+.mono/
+data_*/
+mono_crash.*.json
+
+# Godot scene files with merge conflicts
+*.tscn.merge=*
+*.tres.merge=*
+
+# OS-specific ignores
+.DS_Store
+Thumbs.db
+.directory
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.project
+.cproject
+*.orig
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Build artifacts
+build/
+dist/
+*.egg-info/
