@@ -1,160 +1,153 @@
-## Alap egység script
-## Kezeli az egység adatait, kijelöléseit és vizuális visszajelzéseket
+extends CharacterBody3D
 
-extends Node3D
+# --- MOVEMENT & AVOIDANCE (Points 1 & 2) ---
+@onready var nav_agent = $NavigationAgent3D
+@export var max_speed: float = 5.0
+@export var acceleration: float = 8.0
+@export var rotation_speed: float = 10.0
 
-class_name Unit
+# --- COMMAND QUEUE (Point 3) ---
+var command_queue: Array = []
+var current_command: Dictionary = {}
 
-signal move_started(target: Vector3)
-signal move_finished(position: Vector3)
-signal selection_changed(selected: bool)
-signal health_changed(current: float, max: float)
-signal attack_started(target: Unit)
-signal attack_finished()
+# --- COMBAT SYSTEM (Point 5) ---
+@export var max_health: int = 100
+var health: int
+@export var attack_damage: int = 15
+@export var attack_range: float = 2.0
+@export var attack_cooldown: float = 1.2
+var attack_timer: float = 0.0
+var current_target: Node3D = null
 
-@export var unit_name: String = "Egység"
-@export var health: float = 100.0
-@export var max_health: float = 100.0
-@export var speed: float = 10.0
-@export var model_scale: float = 1.0
-@export var attack_damage: float = 10.0
-@export var attack_range: float = 5.0
-@export var attack_speed: float = 1.0
+# --- ANIMATION ---
+# Assuming you have an AnimationTree with a parameter called "parameters/BlendSpace1D/blend_position"
+@onready var anim_tree = $AnimationTree 
 
-var is_selected: bool = false
-var selection_indicator: Node3D
-var movement_controller: MovementController
-var command_queue: CommandQueue
-var combat_system: CombatSystem
-
-@onready var mesh_instance = MeshInstance3D.new()
-
-func _ready() -> void:
-	# Egyszerű mesh létrehozása
-	var mesh = BoxMesh.new()
-	mesh.size = Vector3(1, 2, 1) * model_scale
-	mesh_instance.mesh = mesh
-	add_child(mesh_instance)
+func _ready():
+	health = max_health
 	
-	# Kijelölés indikátor
-	create_selection_indicator()
+	# Setup Navigation Agent for Collision Avoidance (Point 1)
+	nav_agent.velocity_computed.connect(_on_velocity_computed)
+	nav_agent.avoidance_enabled = true 
+	nav_agent.radius = 0.5 # Adjust based on your unit size
+	nav_agent.neighbor_distance = 5.0
+	nav_agent.avoidance_layers = 1
+	nav_agent.avoidance_masks = 1
+
+func _physics_process(delta):
+	update_attack_timer(delta)
 	
-	# Anyag beállítása
-	var material = StandardMaterial3D.new()
-	material.albedo_color = Color.GRAY
-	mesh_instance.set_surface_override_material(0, material)
+	# Prioritize Combat over Movement
+	if current_target and is_instance_valid(current_target):
+		handle_combat(delta)
+	else:
+		handle_movement(delta)
+		process_command_queue()
+
+# --- MOVEMENT & SMOOTHING LOGIC ---
+func handle_movement(delta):
+	if nav_agent.is_navigation_finished():
+		# Smooth stopping (Point 2)
+		velocity = velocity.lerp(Vector3.ZERO, acceleration * delta)
+	else:
+		var next_path_pos = nav_agent.get_next_path_position()
+		var direction = (next_path_pos - global_transform.origin).normalized()
+		var target_velocity = direction * max_speed
+		
+		# Smooth acceleration (Point 2)
+		velocity = velocity.lerp(target_velocity, acceleration * delta)
+		
+		# Smooth rotation to face movement direction
+		if direction.length() > 0.1:
+			var target_transform = global_transform.looking_at(global_transform.origin + direction, Vector3.UP)
+			global_transform = global_transform.interpolate_with(target_transform, rotation_speed * delta)
+
+	# Apply Godot 4 Avoidance (Point 1)
+	if nav_agent.avoidance_enabled:
+		nav_agent.velocity = velocity
+	else:
+		move_and_slide()
+
+	# Update Animation Blend based on speed (Point 2)
+	if anim_tree:
+		var speed_ratio = velocity.length() / max_speed
+		anim_tree.set("parameters/BlendSpace1D/blend_position", speed_ratio)
+
+func _on_velocity_computed(safe_velocity):
+	# This is called by NavigationAgent3D when avoidance calculates a safe path
+	velocity = safe_velocity
+	move_and_slide()
+
+# --- COMMAND QUEUE LOGIC (Point 3) ---
+func process_command_queue():
+	# If no active command, pull the next one from the queue
+	if current_command.is_empty() and command_queue.size() > 0:
+		current_command = command_queue.pop_front()
+		execute_command(current_command)
+
+	# If we reached the target of the current command, clear it
+	if not current_command.is_empty() and nav_agent.is_navigation_finished():
+		current_command = {}
+
+func move_to(target_pos: Vector3, add_to_queue: bool = false):
+	var cmd = {"type": "move", "pos": target_pos}
 	
-	# Mozgatási kontroller hozzáadása
-	movement_controller = MovementController.new()
-	movement_controller.name = "MovementController"
-	movement_controller.speed = speed
-	add_child(movement_controller)
-	movement_controller.move_started.connect(_on_move_started)
-	movement_controller.move_finished.connect(_on_move_finished)
+	if add_to_queue:
+		command_queue.append(cmd) # Shift+Right Click behavior
+	else:
+		command_queue.clear()     # Normal Right Click behavior
+		command_queue.append(cmd)
+		current_command = cmd
+		
+	nav_agent.target_position = target_pos
+
+func execute_command(cmd: Dictionary):
+	if cmd.get("type") == "move":
+		nav_agent.target_position = cmd["pos"]
+
+# --- COMBAT LOGIC (Point 5) ---
+func attack_target(target: Node3D):
+	current_target = target
+	command_queue.clear() # Stop moving to focus on combat
+	current_command = {}
+
+func handle_combat(delta):
+	var dist = global_transform.origin.distance_to(current_target.global_transform.origin)
 	
-	# Parancsüzenetsor hozzáadása
-	command_queue = CommandQueue.new()
-	command_queue.name = "CommandQueue"
-	add_child(command_queue)
-	
-	# Harc szisztéma hozzáadása
-	combat_system = CombatSystem.new()
-	combat_system.name = "CombatSystem"
-	combat_system.base_damage = attack_damage
-	combat_system.attack_range = attack_range
-	combat_system.attack_speed = attack_speed
-	add_child(combat_system)
+	if dist <= attack_range:
+		# In range: Stop moving smoothly and attack
+		velocity = velocity.lerp(Vector3.ZERO, acceleration * delta)
+		if nav_agent.avoidance_enabled:
+			nav_agent.velocity = velocity
+			
+		# Face the target
+		var look_dir = (current_target.global_transform.origin - global_transform.origin).normalized()
+		var target_transform = global_transform.looking_at(global_transform.origin + look_dir, Vector3.UP)
+		global_transform = global_transform.interpolate_with(target_transform, rotation_speed * delta)
 
-func _process(_delta: float) -> void:
-	if is_selected and selection_indicator:
-		# Forgó hatás a kijelöléshez
-		selection_indicator.rotation.y += 0.02
+		if attack_timer <= 0:
+			deal_damage()
+			attack_timer = attack_cooldown
+			# TODO: Play attack animation here
+	else:
+		# Out of range: Chase the target
+		nav_agent.target_position = current_target.global_transform.origin
+		handle_movement(delta)
 
-func create_selection_indicator() -> void:
-	selection_indicator = Node3D.new()
-	selection_indicator.name = "SelectionIndicator"
-	add_child(selection_indicator)
-	
-	var torus = MeshInstance3D.new()
-	var torus_mesh = TorusMesh.new()
-	torus_mesh.inner_radius = 0.8
-	torus_mesh.outer_radius = 1.2
-	torus.mesh = torus_mesh
-	
-	var glow_material = StandardMaterial3D.new()
-	glow_material.albedo_color = Color.GREEN
-	glow_material.emission_enabled = true
-	glow_material.emission = Color.GREEN
-	glow_material.transparency = BaseMaterial3D.TRANSPARENCY_ALPHA
-	glow_material.alpha_scissor = BaseMaterial3D.ALPHA_SCISSOR_OPAQUE
-	torus.set_surface_override_material(0, glow_material)
-	
-	selection_indicator.add_child(torus)
-	set_selected(false)
+func deal_damage():
+	if current_target.has_method("take_damage"):
+		current_target.take_damage(attack_damage)
 
-func set_selected(selected: bool) -> void:
-	is_selected = selected
-	if selection_indicator:
-		selection_indicator.visible = selected
-	selection_changed.emit(selected)
-
-func is_unit() -> bool:
-	return true
-
-func get_unit_name() -> String:
-	return unit_name
-
-func get_attack_damage() -> float:
-	return attack_damage
-
-func get_attack_range() -> float:
-	return attack_range
-
-func get_attack_speed() -> float:
-	return attack_speed
-
-func take_damage(damage: float) -> void:
-	health = max(0, health - damage)
-	health_changed.emit(health, max_health)
+func take_damage(amount: int):
+	health -= amount
+	# TODO: Play hit animation / flash red
 	if health <= 0:
 		die()
 
-func die() -> void:
-	print("%s meghalt!" % unit_name)
+func die():
+	# TODO: Play death animation before queue_free()
 	queue_free()
 
-func move_to(position: Vector3) -> void:
-	if movement_controller:
-		movement_controller.move_to(position)
-		move_started.emit(position)
-
-func stop_moving() -> void:
-	if movement_controller:
-		movement_controller.stop_moving()
-
-func attack(target: Unit) -> void:
-	if combat_system:
-		combat_system.set_target(target)
-		attack_started.emit(target)
-
-func stop_attacking() -> void:
-	if combat_system:
-		combat_system.stop_attacking()
-
-func counter_attack(attacker: Unit) -> void:
-	# Ellentámadás - 50% eséllyel
-	if randf() < 0.5:
-		print("%s visszaütésben támad!" % unit_name)
-		var counter_damage = attack_damage * 0.5
-		attacker.take_damage(counter_damage)
-
-func is_moving() -> bool:
-	if movement_controller:
-		return movement_controller.get_is_moving()
-	return false
-
-func _on_move_started(target: Vector3) -> void:
-	move_started.emit(target)
-
-func _on_move_finished(position: Vector3) -> void:
-	move_finished.emit(position)
+func update_attack_timer(delta):
+	if attack_timer > 0:
+		attack_timer -= delta
